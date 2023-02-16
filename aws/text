@@ -1,0 +1,9 @@
+aws budgets create-budget \
+    --account-id $AWS_ACCOUNT_ID \
+    --budget file://aws/budget.json \
+    --notifications-with-subscribers file://aws/notifications_with_subscribers.json
+
+aws sns subscribe \
+    --topic-arn "arn:aws:sns:us-east-1:853114967029:billing-alarm" \
+    --protocol email\
+    --notification-endpoint jonny_boy90609@yahoo.com
