@@ -3,7 +3,7 @@
     "AlarmDescription": "This alarm would be triggered if the daily estimated charges exceeds 1$",
     "ActionsEnabled": true,
     "AlarmActions": [
-        "arn:aws:sns:ca-central-1:387543059434:billing-alarm"
+        "arn:aws:cloudwatch:us-east-1:853114967029:alarm:cli-made-alarm"
     ],
     "EvaluationPeriods": 1,
     "DatapointsToAlarm": 1,
