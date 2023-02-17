@@ -25,6 +25,8 @@ tasks:
 - User -> Select user -> `Security credentials` -> `Create Access Key`
 - Choose AWS CLI Access and download the CSV with credentials
 
+![Alt text](../_docs/AWS%20Admin%20User.png)
+
 ### Set env variables
 We will set these credentials for the current bash terminal
 ```
@@ -54,6 +56,7 @@ You should see something like this:
     "Arn": "arn:aws:iam::0123456789101:user/username"
 }
 ```
+![Alt text](../_docs/AWS%20CLI%20installed.png)
 
 ## Billing
 - Enable billing: in root account go to [Billing Page](https://console.aws.amazon.com/billing/)
@@ -74,6 +77,7 @@ aws sns subscribe \
     --protocol email \
     --notification-endpoint your@email.com
 ```
+![Alt text](../_docs/AWS%20SNS.png)
 
 Check your email and confirm the subscription
 
@@ -86,6 +90,7 @@ Check your email and confirm the subscription
 ```sh
 aws cloudwatch put-metric-alarm --cli-input-json file://aws/json/alarm-config.json
 ```
+![Alt text](../_docs/AWS%20Alarm.png)
 
 
 ## Create an AWS Budget
@@ -107,8 +112,9 @@ aws budgets create-budget \
     --budget file://aws/json/budget.json \
     --notifications-with-subscribers file://aws/json/budget-notifications-with-subscribers.json
 ```
+![Alt text](../_docs/AWS%20Budget.png)
 
 ## Recreate conceptual diagram in Lucidcharts/napkin
 - Recreated the conceptual diagram, so a non-technical person can understand it: [diagram-1](https://lucid.app/lucidchart/0a2daf3d-aed6-435b-aa0b-cca75b872423/edit?viewport_loc=-163%2C102%2C2419%2C1164%2C0_0&invitationId=inv_9f2c2c1f-9d18-4b16-9237-9fa4b70ddf46)
 - Recreated a conceptual diagram using AWS specific iconography: [diagram-2](https://lucid.app/lucidchart/b0bbca9f-6919-4d92-82f6-8d17f058c738/edit?viewport_loc=-185%2C111%2C2207%2C1062%2C0_0&invitationId=inv_52fc783a-555b-40ba-8c71-8a6d377925ec)
-- Created a logical diagram for this project: TODO
+- Created a logical diagram for this project: [diagram-3](https://lucid.app/lucidchart/95db69db-35cb-4ee5-8f37-530b915f72a5/edit?viewport_loc=-68%2C18%2C2114%2C1017%2C0_0&invitationId=inv_4eb1eda1-985d-4932-bf28-df2dcbd847eb)
