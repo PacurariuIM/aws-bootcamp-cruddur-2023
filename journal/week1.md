@@ -67,7 +67,7 @@ cd frontend-react-js
 npm i
 ```
 ***
-Pro tip: After creating the `docker-compose.yml` file (a few steps later) , we can add for the backend-flask the following volume:
+Pro tip(credits to user `elam#3674`): After creating the `docker-compose.yml` file (a few steps later) , we can add for the backend-flask the following volume:
 ```bash
 - /frontend-react-js/node_modules
 ```
@@ -128,6 +128,8 @@ networks:
     driver: bridge
     name: cruddur
 ```
+![Alt text](../_docs/w01/docker-compose-up.png)
+
 
 ## DynamoDB local & Postgres
 I've succesfuly managed to bring DynamoDB local and Postgres as containers, for future uses, by making the following additions to the `docker-compose.yml` file:
@@ -188,9 +190,15 @@ volumes:
   db:
     driver: local
 ```
+![Alt text](../_docs/w01/dynamo_postgres_containers.png)
+
+## Notifications endpoint
+
+![Alt text](../_docs/w01/api_notifications.png)
+![Alt text](../_docs/w01/notifications.png)
 
 ## Extra stuff
 - After doing the mandatory work, I've played a bit with Docker, watched some more tutorials and tried to create some simple usecases, to prove myself I understood it;
 - Due to lack of time, I've only managed to push and tag some simple images into my Dockerhub account, but planning to do more.
-![Alt text](../_docs/push_dockerhub.png)
-![Alt text](../_docs/push_dockerhub2.png)
+![Alt text](../_docs/w01/push_dockerhub.png)
+![Alt text](../_docs/w01/push_dockerhub2.png)
