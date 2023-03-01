@@ -158,3 +158,24 @@ aws xray create-group \
 ```
 aws xray create-sampling-rule --cli-input-json file://aws/xray.json
 ```
+
+## Add Deamon Service to Docker Compose
+- inside the `docker-compose.yml` file we put the following code:
+```
+xray-daemon:
+    image: "amazon/aws-xray-daemon"
+    environment:
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+      AWS_REGION: "us-east-1"
+    command:
+      - "xray -o -b xray-daemon:2000"
+    ports:
+      - 2000:2000/udp
+ ```
+ - we also add these env variables to our backend-flask inside `docker-compose.yml`:
+ ```
+      AWS_XRAY_URL: "*4567-${GITPOD_WORKSPACE_ID}.${GITPOD_WORKSPACE_CLUSTER_HOST}*"
+      AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"
+  ```
+  
