@@ -107,4 +107,54 @@ def rollbar_test():
     rollbar.report_message('Hello World!', 'warning')
     return "Hello World!"
 ```
-
+## AWS X-Ray
+- first we have to make sure we setup our region to be the same as the AWS console one:
+```
+export AWS_REGION="us-east-1"
+gp env AWS_REGION="us-east-1"
+```
+- add to `requirements.txt` and install:
+```
+aws-xray-sdk
+```
+```py
+pip install -r requirements.txt
+```
+- add to `app.py`:
+```py
+from aws_xray_sdk.core import xray_recorder
+from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
+```
+```py
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
+XRayMiddleware(app, xray_recorder)
+```
+- create a `xray.json` file inside `aws` folder, put this content:
+```json
+{
+  "SamplingRule": {
+      "RuleName": "Cruddur",
+      "ResourceARN": "*",
+      "Priority": 9000,
+      "FixedRate": 0.1,
+      "ReservoirSize": 5,
+      "ServiceName": "Cruddur",
+      "ServiceType": "*",
+      "Host": "*",
+      "HTTPMethod": "*",
+      "URLPath": "*",
+      "Version": 1
+  }
+}
+```
+- run the following line of code, to setup an AWS X-Ray group:
+```
+aws xray create-group \
+   --group-name "Cruddur" \
+   --filter-expression "service(\"backend-flask\")"
+```
+- create a sampling rule, for that group:
+```
+aws xray create-sampling-rule --cli-input-json file://aws/xray.json
+```
