@@ -24,7 +24,6 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 
 # Rollbar-------------
-import os
 import rollbar
 import rollbar.contrib.flask
 from flask import got_request_exception
@@ -42,10 +41,9 @@ provider.add_span_processor(simple_processor)
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
 
-app = Flask(__name__)
 # Honeycomb ----------------
 # Initialize automatic instrumentation with Flask
-
+app = Flask(__name__)
 FlaskInstrumentor().instrument_app(app)
 RequestsInstrumentor().instrument()
 
