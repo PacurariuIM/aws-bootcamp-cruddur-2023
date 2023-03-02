@@ -179,3 +179,40 @@ xray-daemon:
       AWS_XRAY_DAEMON_ADDRESS: "xray-daemon:2000"
   ```
   
+## Cloudwatch logs
+- add to `requirements.txt` and install:
+```
+watchtower
+```
+```
+pip install -r requirements.txt
+```
+- in `app.py` we put the following:
+```
+import watchtower
+import logging
+from time import strftime
+```
+```bash
+# Configuring Logger to Use CloudWatch
+LOGGER = logging.getLogger(__name__)
+LOGGER.setLevel(logging.DEBUG)
+console_handler = logging.StreamHandler()
+cw_handler = watchtower.CloudWatchLogHandler(log_group='cruddur')
+LOGGER.addHandler(console_handler)
+LOGGER.addHandler(cw_handler)
+LOGGER.info("test log")
+```
+```bash
+@app.after_request
+def after_request(response):
+    timestamp = strftime('[%Y-%b-%d %H:%M]')
+    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+    return response
+```
+- set in `docker-compose.yml` the env variables for backend-flask:
+```bash
+      AWS_DEFAULT_REGION: "${AWS_DEFAULT_REGION}"
+      AWS_ACCESS_KEY_ID: "${AWS_ACCESS_KEY_ID}"
+      AWS_SECRET_ACCESS_KEY: "${AWS_SECRET_ACCESS_KEY}"
+```
