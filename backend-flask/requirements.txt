@@ -13,3 +13,5 @@ rollbar
 aws-xray-sdk
 
 watchtower
+
+Flask-AWSCognito
