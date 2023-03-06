@@ -16,7 +16,7 @@ from services.show_activity import *
 
 from lib.cognito_jwt_token import CognitoJwtToken, extract_access_token, TokenVerifyError
 
-# Honeycomb -------------------
+# HoneyComb ---------
 from opentelemetry import trace
 from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -25,20 +25,20 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
 
-# Rollbar-------------
-import rollbar
-import rollbar.contrib.flask
-from flask import got_request_exception
-from time import strftime
-
-# X-Ray---------
+# X-RAY ----------
 from aws_xray_sdk.core import xray_recorder
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
-# Cloudwatch-------------
+# CloudWatch Logs ----
 import watchtower
 import logging
 
+# Rollbar ------
+from time import strftime
+import os
+import rollbar
+import rollbar.contrib.flask
+from flask import got_request_exception
 
 # Configuring Logger to Use CloudWatch
 # LOGGER = logging.getLogger(__name__)
@@ -49,36 +49,39 @@ import logging
 # LOGGER.addHandler(cw_handler)
 # LOGGER.info("test log")
 
-# Honeycomb ----------------
+# HoneyComb ---------
 # Initialize tracing and an exporter that can send data to Honeycomb
 provider = TracerProvider()
 processor = BatchSpanProcessor(OTLPSpanExporter())
 provider.add_span_processor(processor)
 
-# OTEL ---------------
+# X-RAY ----------
+xray_url = os.getenv("AWS_XRAY_URL")
+xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
+
+# OTEL ----------
 # Show this in the logs within the backend-flask app (STDOUT)
-# simple_processor = SimpleSpanProcessor(ConsoleSpanExporter())
-# provider.add_span_processor(simple_processor)
+#simple_processor = SimpleSpanProcessor(ConsoleSpanExporter())
+#provider.add_span_processor(simple_processor)
 
 trace.set_tracer_provider(provider)
 tracer = trace.get_tracer(__name__)
+
 app = Flask(__name__)
-
-# Honeycomb ----------------
-# Initialize automatic instrumentation with Flask
-FlaskInstrumentor().instrument_app(app)
-RequestsInstrumentor().instrument()
-
-# X-Ray---------
-xray_url = os.getenv("AWS_XRAY_URL")
-xray_recorder.configure(service='backend-flask', dynamic_naming=xray_url)
-XRayMiddleware(app, xray_recorder)
 
 cognito_jwt_token = CognitoJwtToken(
   user_pool_id=os.getenv("AWS_COGNITO_USER_POOL_ID"), 
   user_pool_client_id=os.getenv("AWS_COGNITO_USER_POOL_CLIENT_ID"),
   region=os.getenv("AWS_DEFAULT_REGION")
 )
+
+# X-RAY ----------
+XRayMiddleware(app, xray_recorder)
+
+# HoneyComb ---------
+# Initialize automatic instrumentation with Flask
+FlaskInstrumentor().instrument_app(app)
+RequestsInstrumentor().instrument()
 
 
 frontend = os.getenv('FRONTEND_URL')
@@ -92,7 +95,14 @@ cors = CORS(
   methods="OPTIONS,GET,HEAD,POST"
 )
 
-# Rollbar --------------
+# CloudWatch Logs -----
+#@app.after_request
+#def after_request(response):
+#    timestamp = strftime('[%Y-%b-%d %H:%M]')
+#    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
+#    return response
+
+# Rollbar ----------
 rollbar_access_token = os.getenv('ROLLBAR_ACCESS_TOKEN')
 @app.before_first_request
 def init_rollbar():
@@ -109,25 +119,12 @@ def init_rollbar():
 
     # send exceptions from `app` to rollbar, using flask's signal system.
     got_request_exception.connect(rollbar.contrib.flask.report_exception, app)
-    
+
 @app.route('/rollbar/test')
 def rollbar_test():
     rollbar.report_message('Hello World!', 'warning')
     return "Hello World!"
 
-# CloudWatch Logs -----
-#@app.after_request
-#def after_request(response):
-#    timestamp = strftime('[%Y-%b-%d %H:%M]')
-#    LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
-#    return response
-
-# @app.after_request
-# def after_request(response):
-#     timestamp = strftime('[%Y-%b-%d %H:%M]')
-#     LOGGER.error('%s %s %s %s %s %s', timestamp, request.remote_addr, request.method, request.scheme, request.full_path, response.status)
-#     return response
-    
 @app.route("/api/message_groups", methods=['GET'])
 def data_message_groups():
   user_handle  = 'andrewbrown'
@@ -180,11 +177,6 @@ def data_home():
     app.logger.debug("unauthenicated")
     data = HomeActivities.run()
   return data, 200
-
-# @app.route("/api/activities/notifications", methods=['GET'])
-# def data_notifications():
-#   data = NotificationActivities.run()
-#   return data, 200
 
 @app.route("/api/activities/@<string:handle>", methods=['GET'])
 @xray_recorder.capture('activities_users')
