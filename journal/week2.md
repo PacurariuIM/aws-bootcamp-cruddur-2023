@@ -56,7 +56,8 @@ export HONEYCOMB_SERVICE_NAME="Cruddur"
 gp env HONEYCOMB_API_KEY="myAPIkey"
 gp env HONEYCOMB_SERVICE_NAME="Cruddur"
 ```
-
+![Alt text](../_docs/w02/Honeycomb.png)
+![Alt text](../_docs/w02/honeycomb2.png)
 ## Rollbar
 - we need add to `requirements.txt`:
 ```
@@ -107,6 +108,7 @@ def rollbar_test():
     rollbar.report_message('Hello World!', 'warning')
     return "Hello World!"
 ```
+![Alt text](../_docs/w02/rollbar-error.png)
 ## AWS X-Ray
 - first we have to make sure we setup our region to be the same as the AWS console one:
 ```
@@ -158,7 +160,7 @@ aws xray create-group \
 ```
 aws xray create-sampling-rule --cli-input-json file://aws/xray.json
 ```
-
+![Alt text](../_docs/w02/Xray%20trace.png)
 ## Add Deamon Service to Docker Compose
 - inside the `docker-compose.yml` file we put the following code:
 ```
