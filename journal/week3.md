@@ -7,6 +7,7 @@ npm i aws-amplify --save
 ```
 ## Cognito User Group
 - using the AWS Console we'll create a Cognito User Group, for user sign-up and authentication
+![Alt text](../_docs/w03/Cognito%20user%20pool.png)
 
 ## Configure Amplify
 - we need to connect our Cognito User Group with the code in our `App.js':
@@ -79,7 +80,7 @@ const loadData = async () => {
     checkAuth();
   }, [])
   ```
-  
+  ![Alt text](../_docs/w03/logged%20in.png)
   - we update `ProfileInfo.js`:
   ```
   import { Auth } from 'aws-amplify';
@@ -197,7 +198,8 @@ export default function SignupPage() {
     return false
   }
   ```
-  
+  ![Alt text](../_docs/w03/confirmation%20email.png)
+  ![Alt text](../_docs/w03/users%20confirmed.png)
   ## Recovery page
   ```
   import { Auth } from 'aws-amplify';
@@ -223,7 +225,8 @@ export default function SignupPage() {
     return false
   }
   ```
-  
+  ![Alt text](../_docs/w03/pwd%20reset.png)
+  ![Alt text](../_docs/w03/pwd%20reset2.png)
   ## Authenticating server side
   - add in `HomeFeedPage.js` a header to pass along the access token:
   ```
