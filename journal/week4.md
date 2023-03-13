@@ -153,3 +153,5 @@ source "$bin_path/db-create"
 source "$bin_path/db-schema-load"
 source "$bin_path/db-seed"
 ```
+
+### Install Posgtres client
