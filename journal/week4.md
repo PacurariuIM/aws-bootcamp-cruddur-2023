@@ -38,6 +38,9 @@ CREATE TABLE public.activities (
 ```
 export CONNECTION_URL="postgresql://postgres:password@localhost:5432/cruddur"
 gp env CONNECTION_URL="postgresql://postgres:password@localhost:5432/cruddur"
+
+export PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance.cke83t8x6lvl.us-east-1.rds.amazonaws.com"
+gp env PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance.cke83t8x6lvl.us-east-1.rds.amazonaws.com"
 ```
 - we create a bash script `bin/db-connect`:
 ```bash
@@ -114,4 +117,39 @@ VALUES
     current_timestamp + interval '10 day'
   )
   ```
-  
+- to see what connections we are using we'll create `bin/db-sessions`:
+```bash
+#! /usr/bin/bash
+
+if [ "$1" = "prod" ]; then
+  CON_URL=$PROD_CONNECTION_URL
+else
+  CON_URL=$CONNECTION_URL
+fi
+
+NO_DB_CONNECTION_URL=$(sed 's/\/cruddur//g' <<<"$CONNECTION_URL")
+psql $NO_DB_CONNECTION_URL -c "select pid as process_id, \
+       usename as user,  \
+       datname as db, \
+       client_addr, \
+       application_name as app,\
+       state \
+from pg_stat_activity;"
+```
+- to make things easier to setup, we'll create a `bin/db-setup` script:
+```bash
+#! /usr/bin/bash
+-e # stop if it fails at any point
+
+CYAN='\033[1;36m'
+NO_COLOR='\033[0m'
+LABEL="db-setup"
+printf "${CYAN}==== ${LABEL}${NO_COLOR}\n"
+
+bin_path="$(realpath .)/bin"
+
+source "$bin_path/db-drop"
+source "$bin_path/db-create"
+source "$bin_path/db-schema-load"
+source "$bin_path/db-seed"
+```

@@ -5,7 +5,6 @@ NO_COLOR='\033[0m'
 LABEL="db-seed"
 printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
 
-echo "db-seed"
 seed_path="$(realpath .)/db/seed.sql"
 echo $seed_path
 
