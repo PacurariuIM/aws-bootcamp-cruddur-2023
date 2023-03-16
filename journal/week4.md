@@ -155,3 +155,118 @@ source "$bin_path/db-seed"
 ```
 
 ### Install Posgtres client
+- We need to set the env var for our backend-flask application. We put this into our `docker-compose.yml` file:
+```bash
+backend-flask:
+    environment:
+      CONNECTION_URL: "postgresql://postgres:password@db:5432/cruddur"
+```
+- We'll add the following to our requirments.txt and install using pip:
+```
+psycopg[binary]
+psycopg[pool]
+```
+```
+pip install -r requirements.txt
+```
+- To setup DB Object and Connection Pool we create the folder `/lib/db.py`:
+```bash
+from psycopg_pool import ConnectionPool
+import os
+
+def query_wrap_object(template):
+  sql = f"""
+  (SELECT COALESCE(row_to_json(object_row),'{{}}'::json) FROM (
+  {template}
+  ) object_row);
+  """
+  return sql
+
+def query_wrap_array(template):
+  sql = f"""
+  (SELECT COALESCE(array_to_json(array_agg(row_to_json(array_row))),'[]'::json) FROM (
+  {template}
+  ) array_row);
+  """
+  return sql
+
+connection_url = os.getenv("CONNECTION_URL")
+pool = ConnectionPool(connection_url)
+```
+- in `home_activities.py` we replace the mock endpoint with real API call:
+```bash
+from lib.db import pool, query_wrap_array
+
+sql = query_wrap_array("""
+    SELECT
+      activities.uuid,
+      users.display_name,
+      users.handle,
+      activities.message,
+      activities.replies_count,
+      activities.reposts_count,
+      activities.likes_count,
+      activities.reply_to_activity_uuid,
+      activities.expires_at,
+      activities.created_at
+    FROM public.activities
+    LEFT JOIN public.users ON users.uuid = activities.user_uuid
+    ORDER BY activities.created_at DESC
+    """)
+    with pool.connection() as conn:
+      with conn.cursor() as cur:
+        cur.execute(sql)
+        # this will return a tuple
+        # the first field being the data
+        json = cur.fetchone()
+    return json[0]
+```
+- We'll provision a RDS instance using the following command:
+```bash
+aws rds create-db-instance \
+  --db-instance-identifier cruddur-db-instance-second \
+  --db-instance-class db.t3.micro \
+  --engine postgres \
+  --engine-version  14.6 \
+  --master-username cruddurroot \
+  --master-user-password bestAWScourse1 \
+  --allocated-storage 20 \
+  --availability-zone us-east-1a \
+  --backup-retention-period 0 \
+  --port 5432 \
+  --no-multi-az \
+  --db-name cruddur \
+  --storage-type gp2 \
+  --publicly-accessible \
+  --storage-encrypted \
+  --enable-performance-insights \
+  --performance-insights-retention-period 7 \
+  --no-deletion-protection
+```
+- In order to connect to the RDS instance we need to provide our Gitpod IP and whitelist for inbound traffic on port 5432, and we'll create a script for this:
+```bash
+#! /usr/bin/bash
+
+CYAN='\033[1;36m'
+NO_COLOR='\033[0m'
+LABEL="rds-update-sg-rule"
+printf "${CYAN}== ${LABEL}${NO_COLOR}\n"
+
+aws ec2 modify-security-group-rules \
+    --group-id $DB_SG_ID \
+    --security-group-rules "SecurityGroupRuleId=$DB_SG_RULE_ID,SecurityGroupRule={Description=GITPOD,IpProtocol=tcp,FromPort=5432,ToPort=5432,CidrIpv4=$GITPOD_IP/32}"
+```
+
+- Inside `gitpod.yml` we'll specify what command to run each time we spin a new environment, so that it provides the IP to our user group:
+```bash
+command: |
+      export GITPOD_IP=$(curl ifconfig.me)
+      source  "$THEIA_WORKSPACE_ROOT/backend-flask/bin/rds-update-sg-rule"
+```
+- We set the group rule ID and the group ID as local variables, for future use:
+```bash
+export DB_SG_ID="sg-*************"
+gp env DB_SG_ID="sg-*************"
+export DB_SG_RULE_ID="sgr--*************"
+gp env DB_SG_RULE_ID="sgr--*************"
+```
