@@ -39,8 +39,8 @@ CREATE TABLE public.activities (
 export CONNECTION_URL="postgresql://postgres:password@localhost:5432/cruddur"
 gp env CONNECTION_URL="postgresql://postgres:password@localhost:5432/cruddur"
 
-export PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance.cke83t8x6lvl.us-east-1.rds.amazonaws.com"
-gp env PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance.cke83t8x6lvl.us-east-1.rds.amazonaws.com"
+export PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance-second.cke83t8x6lvl.us-east-1.rds.amazonaws.com:5432/cruddur"
+gp env PROD_CONNECTION_URL="postgresql://cruddurroot:bestAWScourse1@cruddur-db-instance-second.cke83t8x6lvl.us-east-1.rds.amazonaws.com:5432/cruddur"
 ```
 - we create a bash script `bin/db-connect`:
 ```bash
