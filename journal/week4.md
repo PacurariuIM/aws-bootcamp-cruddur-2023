@@ -102,17 +102,17 @@ fi
 
 psql $CONNECTION_URL cruddur < $seed_path
 ```
+
 - inside `backend-flask/db` we create a new file named `seed.sql`, to seed some data into our tables:
 ```bash
-INSERT INTO public.users (display_name, handle, cognito_user_id)
+INSERT INTO public.users (display_name, handle, cognito_user_id, email)
 VALUES
-  ('Andrew Brown', 'andrewbrown' ,'MOCK'),
-  ('Andrew Bayko', 'bayko' ,'MOCK');
+  ('Ionel Pacurariu', 'ionelp' ,'e2d787ae-5a98-4d02-890e-7231a9a06d2d', 'jonny_boy90609@yahoo.com');
 
 INSERT INTO public.activities (user_uuid, message, expires_at)
 VALUES
   (
-    (SELECT uuid from public.users WHERE users.handle = 'andrewbrown' LIMIT 1),
+    (SELECT uuid from public.users WHERE users.handle = 'ionelp' LIMIT 1),
     'This was imported as seed data!',
     current_timestamp + interval '10 day'
   )
@@ -153,6 +153,7 @@ source "$bin_path/db-create"
 source "$bin_path/db-schema-load"
 source "$bin_path/db-seed"
 ```
+![Alt text](../_docs/w04/db-setup.png)
 
 ### Install Posgtres client
 - We need to set the env var for our backend-flask application. We put this into our `docker-compose.yml` file:
@@ -243,6 +244,7 @@ aws rds create-db-instance \
   --performance-insights-retention-period 7 \
   --no-deletion-protection
 ```
+![Alt text](../_docs/w04/RDS%20instance.png)
 - In order to connect to the RDS instance we need to provide our Gitpod IP and whitelist for inbound traffic on port 5432, and we'll create a script for this:
 ```bash
 #! /usr/bin/bash
@@ -270,3 +272,57 @@ gp env DB_SG_ID="sg-*************"
 export DB_SG_RULE_ID="sgr--*************"
 gp env DB_SG_RULE_ID="sgr--*************"
 ```
+## Setup Cognito post confirmation lambda
+
+- Create lambda in same vpc as rds instance Python 3.8;
+- Put the following code into the Lambda function:
+```py
+import json
+import psycopg2
+import os
+
+def lambda_handler(event, context):
+    user = event['request']['userAttributes']
+    print('userAttributes')
+    print(user)
+
+    user_display_name  = user['name']
+    user_email         = user['email']
+    user_handle        = user['preferred_username']
+    user_cognito_id    = user['sub']
+    try:
+      print('entered-try')
+      sql = f"""
+         INSERT INTO public.users (
+          display_name, 
+          email,
+          handle, 
+          cognito_user_id
+          ) 
+        VALUES(
+          '{user_display_name}', 
+          '{user_email}', 
+          '{user_handle}', 
+          '{user_cognito_id}'
+        )
+      """
+      print('SQL Statement ----')
+      print(sql)
+      conn = psycopg2.connect(os.getenv('CONNECTION_URL'))
+      cur = conn.cursor()
+      cur.execute(sql)
+      conn.commit() 
+
+    except (Exception, psycopg2.DatabaseError) as error:
+      print(error)
+    finally:
+      if conn is not None:
+          cur.close()
+          conn.close()
+          print('Database connection closed.')
+    return event
+```
+
+![Alt text](../_docs/w04/Cloudwatch%20db%20log.png)
+![Alt text](../_docs/w04/Cruddur.png)
+![Alt text](../_docs/w04/prod%20table.png)
