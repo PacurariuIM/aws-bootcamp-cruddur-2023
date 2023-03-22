@@ -1,22 +1,3 @@
-# Week 5 — DynamoDB and Serverless Caching
-
-- we'll add into our `docker-compose.yml` file the following code:
-```bash
-dynamodb-local:
-  # https://stackoverflow.com/questions/67533058/persist-local-dynamodb-data-in-volumes-lack-permission-unable-to-open-databa
-  # We needed to add user:root to get this working.
-    user: root
-    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
-    image: "amazon/dynamodb-local:latest"
-    container_name: dynamodb-local
-    ports:
-      - "8000:8000"
-    volumes:
-      - "./docker/dynamodb:/home/dynamodblocal/data"
-    working_dir: /home/dynamodblocal
-```
-- into `/backend-flask/lib/ddb.py` we'll put the following:
-```py
 import boto3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -64,5 +45,3 @@ def list_message_groups(client,my_user_uuid):
         'created_at': last_sent_at
       })
     return results
-
-    
