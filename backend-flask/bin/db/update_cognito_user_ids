@@ -4,9 +4,8 @@ import boto3
 import os
 import sys
 
-print("== db-update-cognito-user-ids")
+print("===db-update-cognito-user-ids===")
 
-# we use these to import lib.py because it's located on a different level
 current_path = os.path.dirname(os.path.abspath(__file__))
 parent_path = os.path.abspath(os.path.join(current_path, '..', '..'))
 sys.path.append(parent_path)
