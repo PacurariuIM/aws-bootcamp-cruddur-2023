@@ -48,3 +48,31 @@ except Exception as e:
   print(e)
   exit(1) # false
 ```
+- we're going to need a CloudWatch log group:
+```
+aws logs create-log-group --log-group-name "/cruddur/fargate-cluster"
+aws logs put-retention-policy --log-group-name "/cruddur/fargate-cluster" --retention-in-days 1
+```
+- next we'll create an ECS Cluster:
+```bash
+aws ecs create-cluster \
+--cluster-name cruddur \
+--service-connect-defaults namespace=cruddur
+```
+## Gaining Access to ECS Fargate Container
+### Create ECR repo and push image:
+- we'll create some repositories, to store our images;
+- first for base-image python:
+```
+aws ecr create-repository \
+  --repository-name cruddur-python \
+  --image-tag-mutability MUTABLE
+```
+- before pushing the ECR we always have to take the action `Retrieve an authentication token and authenticate your Docker client to your registry.` We'll be doing this with the following command:
+```
+aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+```
+- we will put in a local variable the url for our python repo:
+```
+export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
+```
