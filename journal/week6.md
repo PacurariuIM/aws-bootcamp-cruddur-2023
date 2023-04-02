@@ -76,3 +76,94 @@ aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --usernam
 ```
 export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
 ```
+- we'll pull the python image (v. 3.10 slim-buster) into our container:
+```
+docker pull python:3.10-slim-buster
+```
+- we'll tag the image:
+```
+docker tag python:3.10-slim-buster $ECR_PYTHON_URL:3.10-slim-buster
+```
+- next we will push the images:
+```
+docker push $ECR_PYTHON_URL:3.10-slim-buster
+```
+- after that inside our `backend-flask/Dockerfile` we will change the location from where we pull the image:
+```bash
+FROM 853114967029.dkr.ecr.us-east-1.amazonaws.com/cruddur-python:3.10-slim-buster
+```
+- now we'll create a repo for Flask:
+```
+aws ecr create-repository \
+  --repository-name backend-flask \
+  --image-tag-mutability MUTABLE
+```
+- and we set the URL:
+```bash
+export ECR_BACKEND_FLASK_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/backend-flask"
+```
+- now we have to build the image:
+```bash
+docker build -t backend-flask .
+```
+- than tag it:
+```bash
+docker tag backend-flask:latest $ECR_BACKEND_FLASK_URL:latest
+```
+- and push it:
+```bash
+docker push $ECR_BACKEND_FLASK_URL:latest
+```
+## Register Task Definition:
+- we will pass in sensitive data to task definition; we can check them after in `AWS System Manager-> Parameter Store`:
+```
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_ACCESS_KEY_ID" --value $AWS_ACCESS_KEY_ID
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_SECRET_ACCESS_KEY" --value $AWS_SECRET_ACCESS_KEY
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/CONNECTION_URL" --value $PROD_CONNECTION_URL
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/ROLLBAR_ACCESS_TOKEN" --value $ROLLBAR_ACCESS_TOKEN
+aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/OTEL_EXPORTER_OTLP_HEADERS" --value "x-honeycomb-team=$HONEYCOMB_API_KEY"
+```
+
+- we will create a policy, in `aws/policies/service-assume-role-execution-policy.json`:
+```json
+{
+    "Version":"2012-10-17",
+    "Statement":[{
+    "Action":["sts:AssumeRole"],
+    "Effect":"Allow",
+    "Principal":{
+    "Service":["ecs-tasks.amazonaws.com"]
+    }
+  }]
+}
+
+```
+- after that we will create an task role from our AWS CLI, using that policy:
+```
+aws iam create-role --role-name CruddurServiceExecutionPolicy --assume-role-policy-document "file://aws/policies/service-assume-role-execution-policy.json"
+```
+- we'll create a policy for the AWS System Management Agent:
+```bash
+aws iam put-role-policy \
+  --policy-name SSMAccessPolicy \
+  --role-name CruddurTaskRole \
+  --policy-document "{
+  \"Version\":\"2012-10-17\",
+  \"Statement\":[{
+    \"Action\":[
+      \"ssmmessages:CreateControlChannel\",
+      \"ssmmessages:CreateDataChannel\",
+      \"ssmmessages:OpenControlChannel\",
+      \"ssmmessages:OpenDataChannel\"
+    ],
+    \"Effect\":\"Allow\",
+    \"Resource\":\"*\"
+  }]
+}
+"
+```
+- and we will attach the following policies to this role:
+```bash
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess --role-name CruddurTaskRole
+aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess --role-name CruddurTaskRole
+```
