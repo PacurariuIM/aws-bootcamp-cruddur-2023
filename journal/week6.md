@@ -363,7 +363,7 @@ aws ecs create-service --cli-input-json file://aws/service-backend-flask.json
 aws ecs execute-command  \
 --region $AWS_DEFAULT_REGION \
 --cluster cruddur \
---task 2aad59fdc6b641b281bd081639380ef6 \
+--task 26fdae11ff2d4c008ffcda2e7abe5e64 \
 --container backend-flask \
 --command "/bin/bash" \
 --interactive
