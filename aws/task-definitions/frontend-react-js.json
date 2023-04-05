@@ -11,7 +11,7 @@
     "containerDefinitions": [
       {
         "name": "frontend-react-js",
-        "image": "853114967029.dkr.ecr.us-east-1.amazonaws.com/backend-flask",
+        "image": "853114967029.dkr.ecr.us-east-1.amazonaws.com/frontend-react-js",
         "essential": true,
         "healthCheck": {
           "command": [
