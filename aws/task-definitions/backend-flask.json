@@ -57,8 +57,8 @@
         {"name": "OTEL_EXPORTER_OTLP_ENDPOINT", "value": "https://api.honeycomb.io"},
           {"name": "AWS_COGNITO_USER_POOL_ID", "value": "us-east-1_Am8nwhFg4"},
           {"name": "AWS_COGNITO_USER_POOL_CLIENT_ID", "value": "583cb447cq53g992niajhp7v0n"},
-        {"name": "FRONTEND_URL", "value": "*"},
-        {"name": "BACKEND_URL", "value": "*"},
+          {"name": "FRONTEND_URL", "value": "https://crazyfroggg-project.com"},
+          {"name": "BACKEND_URL", "value": "https://api.crazyfroggg-project.com"},
           {"name": "AWS_DEFAULT_REGION", "value": "us-east-1"}
       ],
       "secrets": [

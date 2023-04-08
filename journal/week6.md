@@ -456,7 +456,7 @@ EXPOSE 3000
 - we will build the container:
 ```bash
 docker build \
---build-arg REACT_APP_BACKEND_URL="http://cruddur-alb-1853049919.us-east-1.elb.amazonaws.com:4567" \
+--build-arg REACT_APP_BACKEND_URL="http://api.crazyfroggg-project.com" \
 --build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
 --build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
 --build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_Am8nwhFg4" \
