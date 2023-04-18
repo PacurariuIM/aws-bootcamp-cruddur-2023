@@ -27,7 +27,7 @@ finally:
 def health_check():
   return {'success': True}, 200
 ```
-- we'll need also a script to run this health check, so inside `bin/flask/health-check` we will write the following (make it executable: ```chmod u+x bin/flask/health-check```):
+- we'll need also a script to run this health check, so inside `backend-flask/bin/health-check` we will write the following (make it executable: ```chmod u+x bin/flask/health-check```):
 ```py
 #!/usr/bin/env python3
 
@@ -113,6 +113,66 @@ docker tag backend-flask:latest $ECR_BACKEND_FLASK_URL:latest
 - and push it:
 ```bash
 docker push $ECR_BACKEND_FLASK_URL:latest
+```
+- inside `frontend-react-js/Dockerfile.prod` we create a new dockerfile for production:
+```sh
+# Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FROM node:16.18 AS build
+
+ARG REACT_APP_BACKEND_URL
+ARG REACT_APP_AWS_PROJECT_REGION
+ARG REACT_APP_AWS_COGNITO_REGION
+ARG REACT_APP_AWS_USER_POOLS_ID
+ARG REACT_APP_CLIENT_ID
+
+ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
+ENV REACT_APP_AWS_PROJECT_REGION=$REACT_APP_AWS_PROJECT_REGION
+ENV REACT_APP_AWS_COGNITO_REGION=$REACT_APP_AWS_COGNITO_REGION
+ENV REACT_APP_AWS_USER_POOLS_ID=$REACT_APP_AWS_USER_POOLS_ID
+ENV REACT_APP_CLIENT_ID=$REACT_APP_CLIENT_ID
+
+COPY . ./frontend-react-js
+WORKDIR /frontend-react-js
+RUN npm install
+RUN npm run build
+
+# New Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+FROM nginx:1.23.3-alpine
+
+# --from build is coming from the Base Image
+COPY --from=build /frontend-react-js/build /usr/share/nginx/html
+COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
+
+EXPOSE 3000
+```
+- now we'll create the repo for the frontend images:
+```bash
+aws ecr create-repository \
+  --repository-name frontend-react-js \
+  --image-tag-mutability MUTABLE
+```
+- we will build the container:
+```bash
+docker build \
+--build-arg REACT_APP_BACKEND_URL="http://api.crazyfroggg-project.com" \
+--build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
+--build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_Am8nwhFg4" \
+--build-arg REACT_APP_CLIENT_ID="583cb447cq53g992niajhp7v0n" \
+-t frontend-react-js \
+-f Dockerfile.prod \
+.
+```
+- we set the URL:
+```sh
+export ECR_FRONTEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react-js"
+```
+- next we will tag the image and push it:
+```sh
+docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
+```
+```sh
+docker push $ECR_FRONTEND_REACT_URL:latest
 ```
 ## Register Task Definition:
 - we will pass in sensitive data to task definition; we can check them after in `AWS System Manager-> Parameter Store`:
@@ -233,6 +293,57 @@ aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAc
 ```sh
 aws ecs register-task-definition --cli-input-json file://aws/task-definitions/backend-flask.json
 ```
+- we will create the service:
+```sh
+aws ecs create-service --cli-input-json file://aws/service-backend-flask.json
+```
+- we'll create in `aws/task-definitions/frontend-react-js.json` the task for the frontend:
+```json
+{
+    "family": "frontend-react-js",
+    "executionRoleArn": "arn:aws:iam::853114967029:role/CruddurServiceExecutionRole",
+    "taskRoleArn": "arn:aws:iam::853114967029:role/CruddurTaskRole",
+    "networkMode": "awsvpc",
+    "cpu": "256",
+    "memory": "512",
+    "requiresCompatibilities": [ 
+      "FARGATE" 
+    ],
+    "containerDefinitions": [
+      {
+        "name": "frontend-react-js",
+        "image": "853114967029.dkr.ecr.us-east-1.amazonaws.com/backend-flask",
+        "essential": true,
+        "portMappings": [
+          {
+            "name": "frontend-react-js",
+            "containerPort": 3000,
+            "protocol": "tcp", 
+            "appProtocol": "http"
+          }
+        ],
+  
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+              "awslogs-group": "cruddur",
+              "awslogs-region": "us-east-1",
+              "awslogs-stream-prefix": "frontend-react-js"
+          }
+        }
+      }
+    ]
+  }
+```
+- we will build the task definition for the frontend:
+```sh
+aws ecs register-task-definition --cli-input-json file://aws/task-definitions/frontend-react-js.json
+```
+- and we create the service:
+```sh
+aws ecs create-service --cli-input-json file://aws/service-frontend-react-js.json
+```
+
 - we set the following local variables:
 ```sh
 export DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
@@ -339,150 +450,7 @@ session-manager-plugin
     }
   }
   ```
-- to find out our subnets we can use the following commands:
-```sh
-export DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
---filters "Name=isDefault, Values=true" \
---query "Vpcs[0].VpcId" \
---output text)
-echo $DEFAULT_VPC_ID
-```
-```sh
-export DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets  \
- --filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
- --query 'Subnets[*].SubnetId' \
- --output json | jq -r 'join(",")')
-echo $DEFAULT_SUBNET_IDS
-```
-- we will create the service:
-```sh
-aws ecs create-service --cli-input-json file://aws/service-backend-flask.json
-```
-- to get into our container via shell, we use the following command (where `task` is the ARN of our task):
-```sh
-aws ecs execute-command  \
---region $AWS_DEFAULT_REGION \
---cluster cruddur \
---task 26fdae11ff2d4c008ffcda2e7abe5e64 \
---container backend-flask \
---command "/bin/bash" \
---interactive
-```
-
-## Create a load balancer
-- in our AWS account -> EC2 -> Load Balancers -> Application Load Balancer;
-- for this load balancer we create a new security group and a target group;
-- inside `aws/service-backend-flask.json` we add the following code, for our load ballancer:
-```json
-"loadBalancers": [
-      {
-          "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:853114967029:targetgroup/cruddur-backend-flask-tg/858cd90dd2c24231",
-          "loadBalancerName": "arn:aws:elasticloadbalancing:us-east-1:853114967029:loadbalancer/app/cruddur-alb/e78d454b3b4fb3cc",
-          "containerName": "backend-flask",
-          "containerPort": 4567
-      }
-    ]
-```
-### Frontend
-- we'll create in `aws/task-definitions/frontend-react-js.json` the task for the frontend:
-```json
-{
-    "family": "frontend-react-js",
-    "executionRoleArn": "arn:aws:iam::853114967029:role/CruddurServiceExecutionRole",
-    "taskRoleArn": "arn:aws:iam::853114967029:role/CruddurTaskRole",
-    "networkMode": "awsvpc",
-    "cpu": "256",
-    "memory": "512",
-    "requiresCompatibilities": [ 
-      "FARGATE" 
-    ],
-    "containerDefinitions": [
-      {
-        "name": "frontend-react-js",
-        "image": "853114967029.dkr.ecr.us-east-1.amazonaws.com/backend-flask",
-        "essential": true,
-        "portMappings": [
-          {
-            "name": "frontend-react-js",
-            "containerPort": 3000,
-            "protocol": "tcp", 
-            "appProtocol": "http"
-          }
-        ],
-  
-        "logConfiguration": {
-          "logDriver": "awslogs",
-          "options": {
-              "awslogs-group": "cruddur",
-              "awslogs-region": "us-east-1",
-              "awslogs-stream-prefix": "frontend-react-js"
-          }
-        }
-      }
-    ]
-  }
-```
-- inside `frontend-react-js/Dockerfile.prod` we create a new dockerfile for production:
-```sh
-# Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FROM node:16.18 AS build
-
-ARG REACT_APP_BACKEND_URL
-ARG REACT_APP_AWS_PROJECT_REGION
-ARG REACT_APP_AWS_COGNITO_REGION
-ARG REACT_APP_AWS_USER_POOLS_ID
-ARG REACT_APP_CLIENT_ID
-
-ENV REACT_APP_BACKEND_URL=$REACT_APP_BACKEND_URL
-ENV REACT_APP_AWS_PROJECT_REGION=$REACT_APP_AWS_PROJECT_REGION
-ENV REACT_APP_AWS_COGNITO_REGION=$REACT_APP_AWS_COGNITO_REGION
-ENV REACT_APP_AWS_USER_POOLS_ID=$REACT_APP_AWS_USER_POOLS_ID
-ENV REACT_APP_CLIENT_ID=$REACT_APP_CLIENT_ID
-
-COPY . ./frontend-react-js
-WORKDIR /frontend-react-js
-RUN npm install
-RUN npm run build
-
-# New Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-FROM nginx:1.23.3-alpine
-
-# --from build is coming from the Base Image
-COPY --from=build /frontend-react-js/build /usr/share/nginx/html
-COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
-
-EXPOSE 3000
-```
-- we will build the container:
-```bash
-docker build \
---build-arg REACT_APP_BACKEND_URL="http://api.crazyfroggg-project.com" \
---build-arg REACT_APP_AWS_PROJECT_REGION="$AWS_DEFAULT_REGION" \
---build-arg REACT_APP_AWS_COGNITO_REGION="$AWS_DEFAULT_REGION" \
---build-arg REACT_APP_AWS_USER_POOLS_ID="us-east-1_Am8nwhFg4" \
---build-arg REACT_APP_CLIENT_ID="583cb447cq53g992niajhp7v0n" \
--t frontend-react-js \
--f Dockerfile.prod \
-.
-```
-- we will build our frontend repo:
-```bash
-aws ecr create-repository \
-  --repository-name frontend-react-js \
-  --image-tag-mutability MUTABLE
-```
-- we set the URL:
-```sh
-export ECR_FRONTEND_REACT_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/frontend-react-js"
-```
-- next we will tag the image and push it:
-```sh
-docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
-```
-```sh
-docker push $ECR_FRONTEND_REACT_URL:latest
-```
-- inside `aws/service-frontend-react-js.json` we will put:
+- and for the frontend, we will create `aws/service-frontend-react-js.json`:
 ```json
 {
   "cluster": "cruddur",
@@ -490,12 +458,7 @@ docker push $ECR_FRONTEND_REACT_URL:latest
   "desiredCount": 1,
   "enableECSManagedTags": true,
   "enableExecuteCommand": true,
-  "loadBalancers": [
-        {
-            "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:853114967029:targetgroup/cruddur-frontend-react-js/f644bdcffa6b8169",
-            "containerName": "frontend-react-js",
-            "containerPort": 3000
-        }
+
       ],
   "networkConfiguration": {
     "awsvpcConfiguration": {
@@ -529,13 +492,53 @@ docker push $ECR_FRONTEND_REACT_URL:latest
   }
 }
 ```
-- we will build the task definition for the frontend:
+- to find out our subnets we can use the following commands:
 ```sh
-aws ecs register-task-definition --cli-input-json file://aws/task-definitions/frontend-react-js.json
+export DEFAULT_VPC_ID=$(aws ec2 describe-vpcs \
+--filters "Name=isDefault, Values=true" \
+--query "Vpcs[0].VpcId" \
+--output text)
+echo $DEFAULT_VPC_ID
 ```
-- and we create the service:
 ```sh
-aws ecs create-service --cli-input-json file://aws/service-frontend-react-js.json
+export DEFAULT_SUBNET_IDS=$(aws ec2 describe-subnets  \
+ --filters Name=vpc-id,Values=$DEFAULT_VPC_ID \
+ --query 'Subnets[*].SubnetId' \
+ --output json | jq -r 'join(",")')
+echo $DEFAULT_SUBNET_IDS
 ```
 
+- to get into our container via shell, we use the following command (where `task` is the ARN of our task):
+```sh
+aws ecs execute-command  \
+--region $AWS_DEFAULT_REGION \
+--cluster cruddur \
+--task 26fdae11ff2d4c008ffcda2e7abe5e64 \
+--container backend-flask \
+--command "/bin/bash" \
+--interactive
+```
 
+## Create a load balancer
+- in our AWS account -> EC2 -> Load Balancers -> Application Load Balancer;
+- for this load balancer we create a new security group and a target group;
+- inside `aws/service-backend-flask.json` we add the following code, for our load ballancer:
+```json
+"loadBalancers": [
+      {
+          "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:853114967029:targetgroup/cruddur-backend-flask-tg/858cd90dd2c24231",
+          "loadBalancerName": "arn:aws:elasticloadbalancing:us-east-1:853114967029:loadbalancer/app/cruddur-alb/e78d454b3b4fb3cc",
+          "containerName": "backend-flask",
+          "containerPort": 4567
+      }
+    ]
+```
+- and inside `aws/service-frontend-react-js.json` for our load balancer we will put:
+```json
+  "loadBalancers": [
+        {
+            "targetGroupArn": "arn:aws:elasticloadbalancing:us-east-1:853114967029:targetgroup/cruddur-frontend-react-js/f644bdcffa6b8169",
+            "containerName": "frontend-react-js",
+            "containerPort": 3000
+        }
+```
