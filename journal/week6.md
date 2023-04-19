@@ -27,6 +27,7 @@ finally:
 def health_check():
   return {'success': True}, 200
 ```
+![Alt text](../_docs/w06-07/backend-health-check.png)
 - we'll need also a script to run this health check, so inside `backend-flask/bin/health-check` we will write the following (make it executable: ```chmod u+x bin/flask/health-check```):
 ```py
 #!/usr/bin/env python3
@@ -50,15 +51,17 @@ except Exception as e:
 ```
 - we're going to need a CloudWatch log group:
 ```
-aws logs create-log-group --log-group-name "/cruddur/fargate-cluster"
-aws logs put-retention-policy --log-group-name "/cruddur/fargate-cluster" --retention-in-days 1
+aws logs create-log-group --log-group-name cruddur
+aws logs put-retention-policy --log-group-name cruddur --retention-in-days 1
 ```
+![Alt text](../_docs/w06-07/cloudwatch-log-group.png)
 - next we'll create an ECS Cluster:
 ```bash
 aws ecs create-cluster \
 --cluster-name cruddur \
 --service-connect-defaults namespace=cruddur
 ```
+![Alt text](../_docs/w06-07/Cluster-with-services-running.png)
 ## Gaining Access to ECS Fargate Container
 ### Create ECR repo and push image:
 - we'll create some repositories, to store our images;
@@ -68,12 +71,15 @@ aws ecr create-repository \
   --repository-name cruddur-python \
   --image-tag-mutability MUTABLE
 ```
-- before pushing the ECR we always have to take the action `Retrieve an authentication token and authenticate your Docker client to your registry.` We'll be doing this with the following command:
-```
-aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
-```
+
+<font color=orange>
+    - before pushing the ECR we always have to take the action <font color=lightblue><i>`Retrieve an authentication token and authenticate your Docker client to your registry.`</i></font> We'll be doing this with the following command:
+
+    aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin "$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+</font>
+
 - we will put in a local variable the url for our python repo:
-```
+```bash
 export ECR_PYTHON_URL="$AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com/cruddur-python"
 ```
 - we'll pull the python image (v. 3.10 slim-buster) into our container:
@@ -92,7 +98,7 @@ docker push $ECR_PYTHON_URL:3.10-slim-buster
 ```bash
 FROM 853114967029.dkr.ecr.us-east-1.amazonaws.com/cruddur-python:3.10-slim-buster
 ```
-- now we'll create a repo for Flask:
+- now we'll create a repo for <font color=cyan>**Flask**</font>:
 ```
 aws ecr create-repository \
   --repository-name backend-flask \
@@ -114,7 +120,7 @@ docker tag backend-flask:latest $ECR_BACKEND_FLASK_URL:latest
 ```bash
 docker push $ECR_BACKEND_FLASK_URL:latest
 ```
-- inside `frontend-react-js/Dockerfile.prod` we create a new dockerfile for production:
+- moving on to the frontend part, inside `frontend-react-js/Dockerfile.prod` we create a new dockerfile for production:
 ```sh
 # Base Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 FROM node:16.18 AS build
@@ -145,7 +151,7 @@ COPY --from=build /frontend-react-js/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 3000
 ```
-- now we'll create the repo for the frontend images:
+- now we'll create the repo for the <font color=cyan>**frontend**</font> images:
 ```bash
 aws ecr create-repository \
   --repository-name frontend-react-js \
@@ -174,8 +180,9 @@ docker tag frontend-react-js:latest $ECR_FRONTEND_REACT_URL:latest
 ```sh
 docker push $ECR_FRONTEND_REACT_URL:latest
 ```
-## Register Task Definition:
-- we will pass in sensitive data to task definition; we can check them after in `AWS System Manager-> Parameter Store`:
+![Alt text](../_docs/w06-07/ECR-repos.png)
+## Register Task Definition and Services:
+- we will pass in sensitive data to task definition; we can check them later in `AWS System Manager-> Parameter Store`:
 ```
 aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_ACCESS_KEY_ID" --value $AWS_ACCESS_KEY_ID
 aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/AWS_SECRET_ACCESS_KEY" --value $AWS_SECRET_ACCESS_KEY
@@ -199,7 +206,7 @@ aws ssm put-parameter --type "SecureString" --name "/cruddur/backend-flask/OTEL_
 
 ```
 - after that we will create a task role from our AWS CLI, using that policy:
-```
+```bash
 aws iam create-role --role-name CruddurServiceExecutionPolicy --assume-role-policy-document "file://aws/policies/service-assume-role-execution-policy.json"
 ```
 - we'll create a policy for the AWS System Management Agent:
@@ -227,7 +234,7 @@ aws iam put-role-policy \
 aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess --role-name CruddurTaskRole
 aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAccess --role-name CruddurTaskRole
 ```
-- inside `aws/task-definitions/backend-flask.json` we'll put the following:
+- to be able to create the <font color=cyan><u>task definition for backend</u></font>, inside `aws/task-definitions/backend-flask.json` we'll write the following:
 ```json
 "family": "backend-flask",
     "executionRoleArn": "arn:aws:iam::853114967029:role/CruddurServiceExecutionRole",
@@ -289,15 +296,55 @@ aws iam attach-role-policy --policy-arn arn:aws:iam::aws:policy/CloudWatchFullAc
     ]
   }
 ```
-- we'll register a task definition:
+- after that we'll register the task definition for the backend:
 ```sh
 aws ecs register-task-definition --cli-input-json file://aws/task-definitions/backend-flask.json
 ```
-- we will create the service:
+- now to be able to create the <font color=cyan><u>service for backend</u></font>, we'll write here `aws/service-backend-flask.json` the following code:
+```json
+{
+    "cluster": "cruddur",
+    "launchType": "FARGATE",
+    "desiredCount": 1,
+    "enableECSManagedTags": true,
+    "enableExecuteCommand": true,
+    "networkConfiguration": {
+      "awsvpcConfiguration": {
+        "assignPublicIp": "ENABLED",
+        "securityGroups": [
+          "sg-00b6f710c0febf59d"
+        ],
+        "subnets": [
+          "subnet-0e4b13b35eb9d697a",
+          "subnet-016348564b4662f39",
+          "subnet-0a97a8914a82c3bdd",
+          "subnet-091f2ab8e06215a7c",
+          "subnet-0e1115887c40320e3",
+          "subnet-08c5803340f59fa7e"
+        ]
+      }
+    },
+    "propagateTags": "SERVICE",
+    "serviceName": "backend-flask",
+    "taskDefinition": "backend-flask",
+    "serviceConnectConfiguration": {
+      "enabled": true,
+      "namespace": "cruddur",
+      "services": [
+        {
+          "portName": "backend-flask",
+          "discoveryName": "backend-flask",
+          "clientAliases": [{"port": 4567}]
+        }
+      ]
+    }
+  }
+  ```
+- and with this command we will create the service:
 ```sh
 aws ecs create-service --cli-input-json file://aws/service-backend-flask.json
 ```
-- we'll create in `aws/task-definitions/frontend-react-js.json` the task for the frontend:
+- we'll create in `aws/task-definitions/frontend-react-js.json` the <font color=cyan><u>task definition for the frontend</u></font>:
 ```json
 {
     "family": "frontend-react-js",
@@ -335,11 +382,53 @@ aws ecs create-service --cli-input-json file://aws/service-backend-flask.json
     ]
   }
 ```
-- we will build the task definition for the frontend:
+- and we will build the task definition with this command:
 ```sh
 aws ecs register-task-definition --cli-input-json file://aws/task-definitions/frontend-react-js.json
 ```
-- and we create the service:
+- to create the <font color=cyan><u>service for frontend</u></font>, we need to put the following code here `aws/service-frontend-react-js.json`:
+```json
+{
+  "cluster": "cruddur",
+  "launchType": "FARGATE",
+  "desiredCount": 1,
+  "enableECSManagedTags": true,
+  "enableExecuteCommand": true,
+
+      ],
+  "networkConfiguration": {
+    "awsvpcConfiguration": {
+      "assignPublicIp": "ENABLED",
+      "securityGroups": [
+        "sg-00b6f710c0febf59d"
+      ],
+      "subnets": [
+          "subnet-0e4b13b35eb9d697a",
+          "subnet-016348564b4662f39",
+          "subnet-0a97a8914a82c3bdd",
+          "subnet-091f2ab8e06215a7c",
+          "subnet-0e1115887c40320e3",
+          "subnet-08c5803340f59fa7e"
+      ]
+    }
+  },
+  "propagateTags": "SERVICE",
+  "serviceName": "frontend-react-js",
+  "taskDefinition": "frontend-react-js",
+  "serviceConnectConfiguration": {
+    "enabled": true,
+    "namespace": "cruddur",
+    "services": [
+      {
+        "portName": "frontend-react-js",
+        "discoveryName": "frontend-react-js",
+        "clientAliases": [{"port": 3000}]
+      }
+    ]
+  }
+}
+```
+- and next we'll create the service for the frontend, with the following command:
 ```sh
 aws ecs create-service --cli-input-json file://aws/service-frontend-react-js.json
 ```
@@ -400,7 +489,7 @@ aws ec2 authorize-security-group-ingress \
 }
 ```
 - we need to install Session Manager in order to connect via Fargate (we can also add them into our `gitpod.yml` file, to run every time we spin a new gitpod instance):
-```
+```bash
 curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
 ```
 ```sh
@@ -409,88 +498,6 @@ sudo dpkg -i session-manager-plugin.deb
 - check if installed:
 ```
 session-manager-plugin
-```
-- we'll create `aws/service-backend-flask.json`:
-```json
-{
-    "cluster": "cruddur",
-    "launchType": "FARGATE",
-    "desiredCount": 1,
-    "enableECSManagedTags": true,
-    "enableExecuteCommand": true,
-    "networkConfiguration": {
-      "awsvpcConfiguration": {
-        "assignPublicIp": "ENABLED",
-        "securityGroups": [
-          "sg-00b6f710c0febf59d"
-        ],
-        "subnets": [
-          "subnet-0e4b13b35eb9d697a",
-          "subnet-016348564b4662f39",
-          "subnet-0a97a8914a82c3bdd",
-          "subnet-091f2ab8e06215a7c",
-          "subnet-0e1115887c40320e3",
-          "subnet-08c5803340f59fa7e"
-        ]
-      }
-    },
-    "propagateTags": "SERVICE",
-    "serviceName": "backend-flask",
-    "taskDefinition": "backend-flask",
-    "serviceConnectConfiguration": {
-      "enabled": true,
-      "namespace": "cruddur",
-      "services": [
-        {
-          "portName": "backend-flask",
-          "discoveryName": "backend-flask",
-          "clientAliases": [{"port": 4567}]
-        }
-      ]
-    }
-  }
-  ```
-- and for the frontend, we will create `aws/service-frontend-react-js.json`:
-```json
-{
-  "cluster": "cruddur",
-  "launchType": "FARGATE",
-  "desiredCount": 1,
-  "enableECSManagedTags": true,
-  "enableExecuteCommand": true,
-
-      ],
-  "networkConfiguration": {
-    "awsvpcConfiguration": {
-      "assignPublicIp": "ENABLED",
-      "securityGroups": [
-        "sg-00b6f710c0febf59d"
-      ],
-      "subnets": [
-          "subnet-0e4b13b35eb9d697a",
-          "subnet-016348564b4662f39",
-          "subnet-0a97a8914a82c3bdd",
-          "subnet-091f2ab8e06215a7c",
-          "subnet-0e1115887c40320e3",
-          "subnet-08c5803340f59fa7e"
-      ]
-    }
-  },
-  "propagateTags": "SERVICE",
-  "serviceName": "frontend-react-js",
-  "taskDefinition": "frontend-react-js",
-  "serviceConnectConfiguration": {
-    "enabled": true,
-    "namespace": "cruddur",
-    "services": [
-      {
-        "portName": "frontend-react-js",
-        "discoveryName": "frontend-react-js",
-        "clientAliases": [{"port": 3000}]
-      }
-    ]
-  }
-}
 ```
 - to find out our subnets we can use the following commands:
 ```sh
@@ -520,9 +527,9 @@ aws ecs execute-command  \
 ```
 
 ## Create a load balancer
-- in our AWS account -> EC2 -> Load Balancers -> Application Load Balancer;
-- for this load balancer we create a new security group and a target group;
-- inside `aws/service-backend-flask.json` we add the following code, for our load ballancer:
+- in our AWS account -> EC2 -> Load Balancers -> Application Load Balancer named `cruddur-alb`;
+- for this load balancer we create a new security group (`cruddur-alb-sg`) and a target group for each of the backend (`cruddur-backend-flask-tg`) and frontend (`cruddur-frontend-react-js`);
+- using the ARN from the previously created target groups, inside `aws/service-backend-flask.json` we add the following code, for our load balancer:
 ```json
 "loadBalancers": [
       {
@@ -533,7 +540,7 @@ aws ecs execute-command  \
       }
     ]
 ```
-- and inside `aws/service-frontend-react-js.json` for our load balancer we will put:
+- and inside `aws/service-frontend-react-js.json` we will put:
 ```json
   "loadBalancers": [
         {
@@ -542,3 +549,13 @@ aws ecs execute-command  \
             "containerPort": 3000
         }
 ```
+## Configuring the domain with AWS Route 53
+
+- using Godaddy.com I've registered this domain: [crazyfroggg-project.com](crazyfroggg-project.com)
+- in Route 53 we create a new public hosted zone with the registered domain name; next we need to copy the nameserver (NS) values into the domain provider appropriate location;
+![Alt text](../_docs/w06-07/route%2053%20NS.png)
+- in AWS Certificate Manager we need to request a public certificate for the domains `crazyfroggg-project.com` and `*.crazyfroggg-project.com`;
+![Alt text](../_docs/w06-07/certificate-issued.png)
+- going back to our load balancer, we create a listener to make `HTTP:80` redirect to `HTTPS:443` and one to make `HTTPS:443` forward to frontend with the certificate we've created previously;
+![Alt text](../_docs/w06-07/load%20balancer%20listeners.png)
+- in our hosted zone we create two records, one for `crazyfroggg-project.com` and one for `api.crazyfroggg-project.com`, of type "A - Route Traffic to an IPv4 address and some AWS resources", route traffic as "Alias to Application and Classic Load Balancer", using our load balancer, routing policy as simple routing. Make sure to be in the appropriate region;
