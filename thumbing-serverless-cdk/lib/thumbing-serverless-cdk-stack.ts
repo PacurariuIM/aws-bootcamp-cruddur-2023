@@ -1,19 +1,20 @@
 import * as cdk from 'aws-cdk-lib';
-import * as s3  from 'aws-cdk-lib/aws-s3';
+import * as s3 from 'aws-cdk-lib/aws-s3';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
+import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
+import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
-import * as dotenv from 'dotenv'
-import * as iam from 'aws-cdk-lib/aws-iam'
-
+import * as dotenv from 'dotenv';
 dotenv.config();
-
 export class ThumbingServerlessCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
     // The code that defines your stack goes here
     const bucketName: string = process.env.THUMBING_BUCKET_NAME as string;
+
     const folderInput: string = process.env.THUMBING_S3_FOLDER_INPUT as string;
     const folderOutput: string = process.env.THUMBING_S3_FOLDER_OUTPUT as string;
     const webhookUrl: string = process.env.THUMBING_WEBHOOK_URL as string;
@@ -26,15 +27,27 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     console.log('topicName',topicName)
     console.log('functionPath',functionPath)
 
-    // const bucket = this.createBucket(bucketName);
+    //const bucket = this.createBucket(bucketName);
     const bucket = this.importBucket(bucketName);
+    // create a lambda
     const lambda = this.createLambda(functionPath, bucketName, folderInput, folderOutput);
 
-    this.createS3NotifyToLambda(folderInput,lambda,bucket)
-    const s3ReadWritePolicy = this.createPolicyBucketAccess(bucket.bucketArn)
-    lambda.addToRolePolicy(s3ReadWritePolicy);
-  }
+    // create topic and subscription
+    const snsTopic = this.createSnsTopic(topicName)
+    this.createSnsSubscription(snsTopic,webhookUrl)
 
+    // add our s3 event notifications
+    this.createS3NotifyToLambda(folderInput,lambda,bucket)
+    this.createS3NotifyToSns(folderOutput,snsTopic,bucket)
+
+    // create policies
+    const s3ReadWritePolicy = this.createPolicyBucketAccess(bucket.bucketArn)
+    //const snsPublishPolicy = this.createPolicySnSPublish(snsTopic.topicArn)
+
+    // attach policies for permissions
+    lambda.addToRolePolicy(s3ReadWritePolicy);
+    //lambda.addToRolePolicy(snsPublishPolicy);
+  }
   createBucket(bucketName: string): s3.IBucket {
     const bucket = new s3.Bucket(this, 'AssetsBucket', {
       bucketName: bucketName,
@@ -62,7 +75,8 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
       }
     });
     return lambdaFunction;
-  }
+  } 
+
   createS3NotifyToLambda(prefix: string, lambda: lambda.IFunction, bucket: s3.IBucket): void {
     const destination = new s3n.LambdaDestination(lambda);
     bucket.addEventNotification(
@@ -71,6 +85,7 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
       {prefix: prefix} // folder to contain the original images
     )
   }
+
   createPolicyBucketAccess(bucketArn: string){
     const s3ReadWritePolicy = new iam.PolicyStatement({
       actions: [
@@ -83,4 +98,42 @@ export class ThumbingServerlessCdkStack extends cdk.Stack {
     });
     return s3ReadWritePolicy;
   }
+
+  createSnsTopic(topicName: string): sns.ITopic{
+    const logicalName = "ThumbingTopic";
+    const snsTopic = new sns.Topic(this, logicalName, {
+      topicName: topicName
+    });
+    return snsTopic;
+  }
+
+  createSnsSubscription(snsTopic: sns.ITopic, webhookUrl: string): sns.Subscription {
+    const snsSubscription = snsTopic.addSubscription(
+      new subscriptions.UrlSubscription(webhookUrl)
+    )
+    return snsSubscription;
+  }
+
+  createS3NotifyToSns(prefix: string, snsTopic: sns.ITopic, bucket: s3.IBucket): void {
+    const destination = new s3n.SnsDestination(snsTopic)
+    bucket.addEventNotification(
+      s3.EventType.OBJECT_CREATED_PUT, 
+      destination,
+      {prefix: prefix}
+    );
+  }
+
+  /*
+  createPolicySnSPublish(topicArn: string){
+    const snsPublishPolicy = new iam.PolicyStatement({
+      actions: [
+        'sns:Publish',
+      ],
+      resources: [
+        topicArn
+      ]
+    });
+    return snsPublishPolicy;
+  }
+  */
 }
