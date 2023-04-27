@@ -7,12 +7,12 @@ opentelemetry-exporter-otlp-proto-http
 opentelemetry-instrumentation-flask 
 opentelemetry-instrumentation-requests
 
-blinker
-rollbar
-
 aws-xray-sdk
 
 watchtower
+
+blinker
+rollbar
 
 Flask-AWSCognito
 
