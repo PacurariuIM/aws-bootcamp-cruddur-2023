@@ -13,6 +13,8 @@ export default function ProfileForm(props) {
     setDisplayName(props.profile.display_name);
   }, [props.profile])
 
+  
+
   const onsubmit = async (event) => {
     event.preventDefault();
     try {
