@@ -8,7 +8,6 @@ export default function ProfileForm(props) {
   const [displayName, setDisplayName] = React.useState(0);
 
   React.useEffect(()=>{
-    console.log('useEffects',props)
     setBio(props.profile.bio);
     setDisplayName(props.profile.display_name);
   }, [props.profile])
@@ -16,12 +15,13 @@ export default function ProfileForm(props) {
   const s3uploadkey = async (event)=> {
     try {
       console.log('s3upload')
-      const backend_url = "https://ewhr1unyjc.execute-api.us-east-1.amazonaws.com/avatars/key_upload"
+      const backend_url = '${process.env.REACT_APP_API_GATEWAY_ENDPOINT_URL}/avatars/key_upload'
       await getAccessToken()
       const access_token = localStorage.getItem("access_token")
       const res = await fetch(backend_url, {
         method: "POST",
         headers: {
+          'Origin': process.env.REACT_APP_FRONTEND_URL,
           'Authorization': `Bearer ${access_token}`,
           'Accept': 'application/json',
           'Content-Type': 'application/json'
@@ -29,6 +29,7 @@ export default function ProfileForm(props) {
       let data = await res.json();
       if (res.status === 200) {
         console.log('presigned url',data)
+        return data.url
       } else {
         console.log(res)
       }
@@ -45,11 +46,11 @@ export default function ProfileForm(props) {
     const type = file.type
     const preview_image_url = URL.createObjectURL(file)
     console.log(filename,size,type)
-
+    const presignedurl = await s3uploadkey()
+    console.log('pp',presignedurl)
     try {
       console.log('s3upload')
-      const backend_url = ""
-      const res = await fetch(backend_url, {
+      const res = await fetch(presignedurl, {
         method: "PUT",
         body: file,
         headers: {
@@ -57,7 +58,7 @@ export default function ProfileForm(props) {
       }})
       let data = await res.json();
       if (res.status === 200) {
-        console.log('presigned url',data)
+        setPresignedurl(data.url)
       } else {
         console.log(res)
       }
@@ -69,7 +70,7 @@ export default function ProfileForm(props) {
   const onsubmit = async (event) => {
     event.preventDefault();
     try {
-      const backend_url = `${process.env.REACT_APP_BACKEND_URL}/api/profile/update`
+      const backend_url = `${process.env.REACT_APP_FRONTEND_URL}/api/profile/update`
       await getAccessToken()
       const access_token = localStorage.getItem("access_token")
       const res = await fetch(backend_url, {
@@ -126,9 +127,6 @@ export default function ProfileForm(props) {
           </div>
           <div className="popup_content">
             
-            <div className="upload" onClick={s3uploadkey}>
-              Upload Avatar
-            </div>
           <input type="file" name="avatarupload" onChange={s3upload} />
 
             <div className="field display_name">
