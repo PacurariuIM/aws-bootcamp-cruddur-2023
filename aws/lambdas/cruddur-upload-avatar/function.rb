@@ -10,7 +10,7 @@ def handler(event:, context:)
     { 
       headers: {
         "Access-Control-Allow-Headers": "*, Authorization",
-        "Access-Control-Allow-Origin": "https://https://3000-pacurariuim-awsbootcamp-ckvvlqgjsc3.ws-eu96b.gitpod.io",
+        "Access-Control-Allow-Origin": "https://3000-pacurariuim-awsbootcamp-io161wgiid4.ws-eu96b.gitpod.io/",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
       },
       statusCode: 200
@@ -38,7 +38,7 @@ def handler(event:, context:)
     { 
       headers: {
         "Access-Control-Allow-Headers": "*, Authorization",
-        "Access-Control-Allow-Origin": "https://https://3000-pacurariuim-awsbootcamp-ckvvlqgjsc3.ws-eu96b.gitpod.io",
+        "Access-Control-Allow-Origin": "https://3000-pacurariuim-awsbootcamp-io161wgiid4.ws-eu96b.gitpod.io/",
         "Access-Control-Allow-Methods": "OPTIONS,GET,POST"
       },
       statusCode: 200, 
