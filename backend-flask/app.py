@@ -126,7 +126,7 @@ with app.app_context():
 
 @app.route('/api/health-check')
 def health_check():
-  return {'success': True, 'ver' : 1.1}, 200
+  return {'success': True, 'ver' : 1.2}, 200
 
 #@app.route('/rollbar/test')
 #def rollbar_test():
