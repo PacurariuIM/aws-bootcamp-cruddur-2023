@@ -218,8 +218,3 @@ Outputs:
         - !Ref Az3
     Export:
       Name: !Sub "${AWS::StackName}AvailabilityZones"
-# Internet Gatwway (IGW)
-# Route Tables
-# Subnets
-# Subnet A
-# Subnet B
