@@ -15,7 +15,7 @@ Parameters:
   ServiceStack:
     Type: String
   ArtifactBucketName:
-  Type: String
+    Type: String
 Resources:
   CodeBuildBakeImageStack:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-stack.html
