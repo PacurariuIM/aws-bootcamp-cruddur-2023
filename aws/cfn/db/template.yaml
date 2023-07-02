@@ -20,7 +20,7 @@ Parameters:
     Default: db.t4g.micro
   DBInstanceIdentifier:
     Type: String
-    Default: cruddur-instance
+    Default: cruddur-db-instance
   DBName:
     Type: String
     Default: cruddur
