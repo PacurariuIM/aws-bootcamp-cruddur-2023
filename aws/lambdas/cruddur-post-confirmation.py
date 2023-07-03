@@ -27,16 +27,10 @@ def lambda_handler(event, context):
           %(cognito_user_id)s
         )
       """
-      # print('SQL Statement ----')
-      # print(sql)
-      # conn = psycopg2.connect(os.getenv('CONNECTION_URL'))
-      # cur = conn.cursor()
-      # cur.execute(sql)
-      # conn.commit() 
       print('SQL Statement ----')
-        print(sql)
-        conn = psycopg2.connect(os.getenv('CONNECTION_URL'))
-        cur = conn.cursor()
+      print(sql)
+      conn = psycopg2.connect(os.getenv('CONNECTION_URL'))
+      cur = conn.cursor()
       params = {
         'display_name': user_display_name,
         'email': user_email,
@@ -44,7 +38,7 @@ def lambda_handler(event, context):
         'cognito_user_id': cognito_user_id
       }
       cur.execute(sql,params)
-      conn.commit()
+      conn.commit() 
 
     except (Exception, psycopg2.DatabaseError) as error:
       print('error:')
