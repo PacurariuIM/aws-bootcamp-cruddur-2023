@@ -1,7 +1,7 @@
 {
   "family": "frontend-react-js",
     "executionRoleArn": "arn:aws:iam::853114967029:role/CruddurServiceExecutionRole",
-    "taskRoleArn": "arn:aws:iam::853114967029:role/CruddurTaskRole",
+    "taskRoleArn": "arn:aws:iam::853114967029:role/CruddurServiceTaskRole",
   "networkMode": "awsvpc",
   "cpu": "256",
   "memory": "512",

@@ -1,0 +1,8 @@
+[deploy]
+bucket = 'cfn-artifacts-crazyfroggg'
+region = 'us-east-1'
+stack_name = 'CrdSrvBackendFlask'
+
+[parameters]
+EnvFrontendUrl = 'https://crazyfroggg-project.com'
+EnvBackendUrl = 'https://api.crazyfroggg-project.com'
