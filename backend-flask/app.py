@@ -125,7 +125,7 @@ with app.app_context():
 
 @app.route('/api/health-check')
 def health_check():
-  return {'success': True, 'ver' : 1.2}, 200
+  return {'success': True, 'ver': 1}, 200
 
 #@app.route('/rollbar/test')
 #def rollbar_test():
@@ -258,16 +258,22 @@ def data_search():
 @app.route("/api/activities", methods=['POST','OPTIONS'])
 @cross_origin()
 def data_activities():
-  user_handle  = 'andrewbrown'
-  message = request.json['message']
-  ttl = request.json['ttl']
-  model = CreateActivity.run(message, user_handle, ttl)
-  if model['errors'] is not None:
-    return model['errors'], 422
-  else:
-    return model['data'], 200
-  return
+  access_token = extract_access_token(request.headers)
+  try:
+    claims = cognito_jwt_token.verify(access_token)
+    cognito_user_id = claims['sub']
 
+    message = request.json['message']
+    ttl = request.json['ttl']
+    model = CreateActivity.run(message, cognito_user_id, ttl)
+    if model['errors'] is not None:
+      return model['errors'], 422
+    else:
+      return model['data'], 200
+  except TokenVerifyError as e:
+    # unauthenicatied request
+    app.logger.debug(e)
+    return {}, 401
 @app.route("/api/activities/<string:activity_uuid>", methods=['GET'])
 @xray_recorder.capture('activities_show')
 def data_show_activity(activity_uuid):
@@ -313,6 +319,7 @@ def data_update_profile():
     # unauthenicatied request
     app.logger.debug(e)
     return {}, 401
+
 
 if __name__ == "__main__":
   app.run(debug=True)
