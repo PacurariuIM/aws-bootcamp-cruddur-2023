@@ -17,7 +17,7 @@ Parameters:
   ArtifactBucketName:
     Type: String
 Resources:
-  CodeBuildBakeImageStack:
+  Codebuild:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-stack.html
     Type: AWS::CloudFormation::Stack
     Properties:
@@ -67,7 +67,7 @@ Resources:
               OutputArtifacts:
                 - Name: ImageDefinition
               Configuration:
-                ProjectName: !GetAtt CodeBuildBakeImageStack.Outputs.CodeBuildProjectName
+                ProjectName: !GetAtt Codebuild.Outputs.CodeBuildProjectName
                 BatchEnabled: false
         # https://docs.aws.amazon.com/codepipeline/latest/userguide/action-reference-ECS.html
         - Name: Deploy
@@ -155,6 +155,9 @@ Resources:
                 - codebuild:StartBuild
                 - codebuild:StopBuild
                 - codebuild:RetryBuild
+                 # even though we are not Batch for CodeBuild
+                # AWS Still requires permissions
+                - codebuild:BatchGetBuilds
                 Effect: Allow
                 Resource: !Join
                   - ''
@@ -163,4 +166,4 @@ Resources:
                     - ':'
                     - !Ref AWS::AccountId
                     - ':project/'
-                    - !GetAtt CodeBuildBakeImageStack.Outputs.CodeBuildProjectName
+                    - !GetAtt Codebuild.Outputs.CodeBuildProjectName
