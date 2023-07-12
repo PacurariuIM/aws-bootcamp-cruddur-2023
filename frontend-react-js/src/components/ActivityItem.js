@@ -19,9 +19,9 @@ export default function ActivityItem(props) {
 
   let expanded_meta;
   if (props.expanded === true) {
-    1:56 PM · May 23, 2023
+    const timestamp = '1:56 PM · May 23, 2023';
+    console.log(timestamp);
   }
-
 
   const attrs = {}
   let item
