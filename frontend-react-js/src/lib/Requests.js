@@ -18,13 +18,16 @@ async function request(method,url,payload_data,options){
       await getAccessToken()
       const access_token = localStorage.getItem("access_token")
       attrs.headers['Authorization'] = `Bearer ${access_token}`
+      console.log('here1')
     }
 
     if (method !== 'GET') {
       attrs.body = JSON.stringify(payload_data)
+      console.log('here2')
     }
 
     res = await fetch(url,attrs)
+    console.log('here3')
     let data = await res.json();
     if (res.status === 200) {
       options.success(data)
@@ -35,6 +38,7 @@ async function request(method,url,payload_data,options){
       console.log(res,data)
     }
   } catch (err) {
+    console.log('fails here')
     console.log('request catch',err)
     if (err instanceof Response) {
         console.log('HTTP error detected:', err.status); // Here you can see the status.
