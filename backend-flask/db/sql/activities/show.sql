@@ -24,9 +24,9 @@ SELECT
     replies.created_at
   FROM public.activities replies
   LEFT JOIN public.users reply_users ON reply_users.uuid = replies.user_uuid
-  WHERE
+  WHERE 
     replies.reply_to_activity_uuid = activities.uuid
-  ORDER BY  activities.created_at ASC
+  ORDER BY activities.created_at ASC
   ) array_row) as replies
 FROM public.activities
 LEFT JOIN public.users ON users.uuid = activities.user_uuid

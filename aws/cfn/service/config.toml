@@ -7,4 +7,4 @@ stack_name = 'CrdSrvBackendFlask'
 EnvFrontendUrl = 'https://crazyfroggg-project.com'
 EnvBackendUrl = 'https://api.crazyfroggg-project.com'
 
-DDBMessageTable = 'cruddur-messages'
+DDBMessageTable = 'CrdDdb-DynamoDBTable-1E5X26DR50AN8'
