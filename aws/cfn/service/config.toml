@@ -6,3 +6,5 @@ stack_name = 'CrdSrvBackendFlask'
 [parameters]
 EnvFrontendUrl = 'https://crazyfroggg-project.com'
 EnvBackendUrl = 'https://api.crazyfroggg-project.com'
+
+DDBMessageTable = 'cruddur-messages'
