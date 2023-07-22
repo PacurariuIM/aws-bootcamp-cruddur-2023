@@ -19,6 +19,6 @@ aws cloudformation deploy \
   --region $REGION \
   --template-file $CFN_PATH \
   --no-execute-changeset \
-  --tags group=cruddur-cluster \
+  --tags group="cruddur-cluster" \
   --parameter-overrides $PARAMETERS \
   --capabilities CAPABILITY_NAMED_IAM

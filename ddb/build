@@ -15,6 +15,6 @@ echo "== build"
 sam build \
 --use-container \
 --config-file $CONFIG_PATH \
---template $TEMPLATE_PATH \
---base-dir $FUNC_DIR
-#--parameter-overrides
+--template-file $TEMPLATE_PATH \
+--base-dir $FUNC_DIR 
+# --parameter-overrides 
