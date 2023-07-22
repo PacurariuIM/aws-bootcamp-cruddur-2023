@@ -28,24 +28,24 @@ def get_user_uuids():
       users.handle
     FROM users
     WHERE
-        users.handle IN(
+      users.handle IN(
         %(my_handle)s,
         %(other_handle)s
         )
-    """
-    users = db.query_array_json(sql,{
+  """
+  users = db.query_array_json(sql,{
     'my_handle':  'cheloo',
     'other_handle': 'bayko'
-    })
-    my_user    = next((item for item in users if item["handle"] == 'joshhargett'), None)
-    other_user = next((item for item in users if item["handle"] == 'bayko'), None)
-    results = {
+  })
+  my_user    = next((item for item in users if item["handle"] == 'cheloo'), None)
+  other_user = next((item for item in users if item["handle"] == 'bayko'), None)
+  results = {
     'my_user': my_user,
     'other_user': other_user
-    }
-    print('get_user_uuids')
-    print(results)
-    return results
+  }
+  print('get_user_uuids')
+  print(results)
+  return results
 
 def create_message_group(client,message_group_uuid, my_user_uuid, last_message_at=None, message=None, other_user_uuid=None, other_user_display_name=None, other_user_handle=None):
   table_name = 'cruddur-messages'
@@ -234,7 +234,7 @@ for i in range(len(lines)):
   create_message(
     client=ddb,
     message_group_uuid=message_group_uuid,
-    created_at=created_at.isoformat(),
+    created_at=created_at,
     message=message,
     my_user_uuid=users[key]['uuid'],
     my_user_display_name=users[key]['display_name'],
