@@ -17,8 +17,8 @@ aws cloudformation deploy \
   --s3-bucket $BUCKET \
   --s3-prefix sync \
   --region $REGION \
-  --template-file "$CFN_PATH" \
+  --template-file $CFN_PATH \
   --no-execute-changeset \
-  --tags group=cruddur-sync \
+  --tags group="cruddur-sync" \
   --parameter-overrides $PARAMETERS \
   --capabilities CAPABILITY_NAMED_IAM

@@ -1,16 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: | 
+Description: |
   - DynamoDB Table
   - DynamoDB Stream
-Parameters:
-  PythonRuntime:
+Parameters: 
+  PythonRuntime: 
     Type: String
     Default: python3.9
   MemorySize:
-    Type: String
-    Default:  128
-  Timeout:
+    Type: Number
+    Default: 128
+  Timeout: 
     Type: Number
     Default: 3
   DeletionProtectionEnabled:
@@ -28,7 +28,7 @@ Resources:
           AttributeType: S
         - AttributeName: sk
           AttributeType: S
-      TableClass: STANDARD 
+      TableClass: STANDARD
       KeySchema: 
         - AttributeName: pk
           KeyType: HASH
@@ -39,14 +39,14 @@ Resources:
         WriteCapacityUnits: 5
       BillingMode: PROVISIONED
       DeletionProtectionEnabled: !Ref DeletionProtectionEnabled
-      GlobalSecondaryIndexes:
+      GlobalSecondaryIndexes: 
         - IndexName: message-group-sk-index
-          KeySchema:
+          KeySchema: 
             - AttributeName: message_group_uuid
               KeyType: HASH
             - AttributeName: sk
               KeyType: RANGE
-          Projection:
+          Projection: 
             ProjectionType: ALL
           ProvisionedThroughput: 
             ReadCapacityUnits: 5
@@ -57,7 +57,7 @@ Resources:
     # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-resource-function.html
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: cruddur-messaging-stream
+      CodeUri: .
       PackageType: Zip
       Handler: lambda_handler
       Runtime: !Ref PythonRuntime
@@ -69,17 +69,18 @@ Resources:
           Type: DynamoDB
           Properties:
             Stream: !GetAtt DynamoDBTable.StreamArn
-            # TODO - Does our Lambda handle more than record?
+            # TODO - Does our Lambda handle more than one record?
             BatchSize: 1
             # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/sam-property-function-dynamodb.html#sam-function-dynamodb-startingposition
-            # TODO - This this the right value?
+            # TODO - Is this the right value? 
             StartingPosition: LATEST
+
   LambdaLogGroup:
     Type: "AWS::Logs::LogGroup"
-    Properties:
+    Properties: 
       LogGroupName: "/aws/lambda/cruddur-messaging-stream00"
       RetentionInDays: 14
-  LambdaLogStream:
+  LambdaLogStream: 
     Type: "AWS::Logs::LogStream"
     Properties:
       LogGroupName: !Ref LambdaLogGroup
@@ -87,8 +88,8 @@ Resources:
   ExecutionRole:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-iam-role.html
     Type: AWS::IAM::Role
-    Properties:
-      RoleName: CruddurDdbStreamExecRole
+    Properties: 
+      RoleName: 'CruddurDdbStreamExecRole'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -96,11 +97,11 @@ Resources:
             Principal:
               Service: 'lambda.amazonaws.com'
             Action: 'sts:AssumeRole'
-      Policies:
+      Policies:            
         - PolicyName: "LambdaExecutionPolicy"
-          PolicyDocument:
+          PolicyDocument: 
             Version: "2012-10-17"
-            Statement:
+            Statement: 
               - Effect: "Allow"
                 Action: "logs:CreateLogGroup"
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:*"
@@ -110,7 +111,7 @@ Resources:
                   - "logs:PutLogEvents"
                 Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:${LambdaLogGroup}:*"
               - Effect: "Allow"
-                Action:
+                Action: 
                   - "ec2:CreateNetworkInterface"
                   - "ec2:DeleteNetworkInterface"
                   - "ec2:DescribeNetworkInterfaces"

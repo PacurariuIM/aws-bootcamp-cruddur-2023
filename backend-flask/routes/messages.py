@@ -25,8 +25,8 @@ def load(app):
   @jwt_required()
   def data_messages(message_group_uuid):
     model = Messages.run(
-        cognito_user_id=g.cognito_user_id,
-        message_group_uuid=message_group_uuid
+      cognito_user_id=g.cognito_user_id,
+      message_group_uuid=message_group_uuid
       )
     return model_json(model)
 

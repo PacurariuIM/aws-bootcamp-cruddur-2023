@@ -19,7 +19,7 @@ from lib.helpers import model_json
 def load(app):
   def default_home_feed(e):
     app.logger.debug(e)
-    app.logger.debug("unauthenicated")
+    app.logger.debug("unauthenticated")
     data = HomeActivities.run()
     return data, 200
 
@@ -27,8 +27,9 @@ def load(app):
   #@xray_recorder.capture('activities_home')
   @jwt_required(on_error=default_home_feed)
   def data_home():
-    data = HomeActivities.run(cognito_user_id=g.cognito_user_id)
-    return data, 200
+      data = HomeActivities.run(cognito_user_id=g.cognito_user_id)
+      CreateActivity.delete_old_activities('12-hours')
+      return data, 200
 
   @app.route("/api/activities/notifications", methods=['GET'])
   def data_notifications():

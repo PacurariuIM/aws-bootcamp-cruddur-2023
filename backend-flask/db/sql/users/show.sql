@@ -1,4 +1,4 @@
-SELECT 
+SELECT
   (SELECT COALESCE(row_to_json(object_row),'{}'::json) FROM (
     SELECT
       users.uuid,
@@ -7,10 +7,10 @@ SELECT
       users.display_name,
       users.bio,
       (
-       SELECT 
-        count(true) 
-       FROM public.activities
-       WHERE
+      SELECT 
+       count(true)
+      FROM public.activities
+      WHERE
         activities.user_uuid = users.uuid
        ) as cruds_count
   ) object_row) as profile,
@@ -22,10 +22,10 @@ SELECT
       activities.message,
       activities.created_at,
       activities.expires_at
-    FROM public.activities
-    WHERE
+    FROM public.activities  
+    WHERE 
       activities.user_uuid = users.uuid
-    ORDER BY activities.created_at DESC 
+    ORDER BY activities.created_at DESC
     LIMIT 40
   ) array_row) as activities
 FROM public.users

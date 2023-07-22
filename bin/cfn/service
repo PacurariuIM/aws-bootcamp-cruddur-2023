@@ -17,9 +17,8 @@ aws cloudformation deploy \
   --s3-bucket $BUCKET \
   --s3-prefix backend-service \
   --region $REGION \
-  --template-file "$CFN_PATH" \
+  --template-file $CFN_PATH \
   --no-execute-changeset \
-  --tags group=cruddur-backend-flask \
+  --tags group="cruddur-backend-flask" \
   --parameter-overrides $PARAMETERS \
   --capabilities CAPABILITY_NAMED_IAM
-  #

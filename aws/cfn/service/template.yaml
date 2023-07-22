@@ -39,19 +39,22 @@ Parameters:
     Default: backend-flask
   EnvOtelExporterOtlpEndpoint:
     Type: String
-    Default: https://api.honeycomb.io
+    Default: 'https://api.honeycomb.io'
   EnvAWSCognitoUserPoolId:
     Type: String
-    Default: us-east-1_Am8nwhFg4
+    Default: 'us-east-1_Am8nwhFg4'
   EnvCognitoUserPoolClientId:
     Type: String
     Default: 583cb447cq53g992niajhp7v0n
   EnvFrontendUrl:
     Type: String
-    Default: "*"
+    Default: 'https://crazyfroggg-project.com'
+  FlaskEnv:
+    Type: String
+    Default: 'production'
   EnvBackendUrl:
     Type: String
-    Default: "*"
+    Default: 'https://api.crazyfroggg-project.com'
   SecretsAWSAccessKeyId:
     Type: String
     Default: 'arn:aws:ssm:us-east-1:853114967029:parameter/cruddur/backend-flask/AWS_ACCESS_KEY_ID'
@@ -115,11 +118,11 @@ Resources:
             PortName: backend-flask
             ClientAliases:
               - Port: !Ref ContainerPort
-      # ServiceRegistries:
-      #   - RegistryArn: !Sub 'arn:aws:servicediscovery:${AWS::Region}:${AWS::AccountId}:service/srv-cruddur-backend-flask'
-      #     Port: !Ref ContainerPort
-      #     ContainerName: 'backend-flask'
-      #     ContainerPort: !Ref ContainerPort
+      #ServiceRegistries:
+      #  - RegistryArn: !Sub 'arn:aws:servicediscovery:${AWS::Region}:${AWS::AccountId}:service/srv-cruddur-backend-flask'
+      #    Port: !Ref ContainerPort
+      #    ContainerName: 'backend-flask'
+      #    ContainerPort: !Ref ContainerPort
       ServiceName: !Ref ServiceName
       TaskDefinition: !Ref TaskDefinition
 
@@ -167,6 +170,8 @@ Resources:
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: !Ref ServiceName
           Environment:
+            - Name: FLASK_ENV
+              Value: !Ref FlaskEnv
             - Name: DDB_MESSAGE_TABLE
               Value: !Ref DDBMessageTable
             - Name: 'OTEL_SERVICE_NAME'
@@ -257,7 +262,6 @@ Resources:
       ManagedPolicyArns:
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
-
 Outputs:
   ServiceName:
     Value: !GetAtt FargateService.Name

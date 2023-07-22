@@ -36,7 +36,7 @@ Resources:
           HostName: !Ref RootBucketName
   RootBucket:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-s3-bucket.html
-    Type: 'AWS::S3::Bucket'
+    Type: AWS::S3::Bucket
     #DeletionPolicy: Retain
     Properties:
       BucketName: !Ref RootBucketName
@@ -58,6 +58,7 @@ Resources:
         DNSName: !GetAtt Distribution.DomainName
         HostedZoneId: Z2FDTNDATAQYW2
   WwwBucketDomain:
+    # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-recordset.html
     Type: AWS::Route53::RecordSet
     Properties:
       HostedZoneName: !Sub ${RootBucketName}.

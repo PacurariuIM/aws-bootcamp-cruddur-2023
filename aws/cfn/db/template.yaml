@@ -66,6 +66,7 @@ Resources:
       DBSubnetGroupName: !Sub "${AWS::StackName}DBSubnetGroup"
       DBSubnetGroupDescription: !Sub "${AWS::StackName}DBSubnetGroup"
       SubnetIds: { 'Fn::Split' : [ ','  , { "Fn::ImportValue": { "Fn::Sub": "${NetworkingStack}PublicSubnetIds" }}] }
+
   Database:
     # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-rds-dbinstance.html
     Type: AWS::RDS::DBInstance
@@ -77,7 +78,7 @@ Resources:
       AllocatedStorage: '20'
       AllowMajorVersionUpgrade: true
       AutoMinorVersionUpgrade: true
-      BackupRetentionPeriod: !Ref  BackupRetentionPeriod
+      BackupRetentionPeriod: !Ref BackupRetentionPeriod
       DBInstanceClass: !Ref DBInstanceClass
       DBInstanceIdentifier: !Ref DBInstanceIdentifier
       DBName: !Ref DBName

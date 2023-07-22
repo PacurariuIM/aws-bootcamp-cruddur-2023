@@ -38,7 +38,7 @@ class CreateReply:
     uuid = db.query_commit(sql,{
       'cognito_user_id': cognito_user_id,
       'reply_to_activity_uuid': activity_uuid,
-      'message': message,
+      'message': message
     })
     return uuid
   def query_object_activity(uuid):
