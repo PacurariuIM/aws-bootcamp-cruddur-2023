@@ -26,7 +26,7 @@ export default function MessageGroupPage() {
         setMessageGroups(data)
       }
     })
-  }
+  } 
 
   const loadMessageGroupData = async () => {
     const url = `${process.env.REACT_APP_BACKEND_URL}/api/messages/${params.message_group_uuid}`
@@ -36,7 +36,7 @@ export default function MessageGroupPage() {
         setMessages(data)
       }
     })
-  }
+  }  
 
   React.useEffect(()=>{
     //prevents double call

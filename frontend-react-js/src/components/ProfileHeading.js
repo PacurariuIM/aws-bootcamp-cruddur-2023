@@ -1,7 +1,7 @@
 import './ProfileHeading.css';
 import EditProfileButton from '../components/EditProfileButton';
 
-import ProfileAvatar from 'components/ProfileAvatar'
+import ProfileAvatar from 'components/ProfileAvatar';
 
 export default function ProfileHeading(props) {
   const backgroundImage = 'url("https://assets.crazyfroggg-project.com/banners/banner.jpg")';
@@ -11,7 +11,7 @@ export default function ProfileHeading(props) {
     backgroundPosition: 'center',
   };
   return (
-  <div className='activity_feed_heading profile_heading'>
+    <div className='activity_feed_heading profile_heading'>
     <div className='title'>{props.profile.display_name}</div>
     <div className="cruds_count">{props.profile.cruds_count} Cruds</div>
     <div className="banner" style={styles} >

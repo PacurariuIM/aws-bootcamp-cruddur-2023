@@ -22,7 +22,7 @@ export default function SignupPage() {
     console.log('email',email)
     console.log('name',name)
     try {
-      const { user } = await Auth.signUp({
+          const { user } = await Auth.signUp({
         username: email,
         password: password,
         attributes: {
@@ -31,7 +31,7 @@ export default function SignupPage() {
           preferred_username: username,
         },
         autoSignIn: { // optional - enables auto sign in after user is confirmed
-          enabled: true,
+            enabled: true,
         }
       });
       console.log(user);
