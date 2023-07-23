@@ -59,7 +59,7 @@ export default function ReplyForm(props) {
       <div className="popup_form_wrap reply_popup" onClick={close}>
         <div className="popup_form">
           <div className="popup_heading">
-            <div className="popup_title">
+          <div className="popup_title">
               Reply to...
             </div>
           </div>

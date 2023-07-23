@@ -1,7 +1,7 @@
 .activity_item {
   display: flex;
   flex-direction: column;
-  border-bottom: solid 1px rgb(60,54,79);
+  border-bottom: solid 1px rgb(60, 54, 79);
   overflow: hidden;
 }
 
@@ -21,7 +21,7 @@
   background: var(--fg);
 }
 
-.activity_main {
+.activity_main {  
   padding: 16px;
 }
 
@@ -65,10 +65,13 @@
   fill: rgb(149,0,255);
 }
 
-
 .activity_item.expanded .activity_content {
   display: flex;
 }
 .activity_item.expanded .activity_content .activity_identity{
   flex-grow: 1;
+}
+
+.expandedMeta .created_at {
+  color: rgba(255,255,255,0.4)
 }
