@@ -1,8 +1,8 @@
 -- this file was manually created
 INSERT INTO public.users (display_name, email, handle, cognito_user_id)
 VALUES
-  ('Ionel Pacurariu', 'jonny_boy90609@yahoo.com', 'crazyfroggg' ,'MOCK'),
-  ('Ionel', 'ionel.crazyfroggg@gmail.com', 'cheloo' ,'MOCK'),
+  ('Ionel', 'jonny_boy90609@yahoo.com', 'cheloo' ,'55de3fed-814d-4fe0-b6cb-e35ff25b5705'),
+  ('Ionel', 'ionel.crazyfroggg@gmail.com', 'crazyfrog' ,'MOCK'),
   ('Andrew Bayko','bayko@exampro.co' , 'bayko' ,'MOCK'),
   ('Londo Mollari','lmollari@centari.com' ,'londo' ,'MOCK');
 
