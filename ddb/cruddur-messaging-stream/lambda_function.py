@@ -22,7 +22,7 @@ def lambda_handler(event, context):
     message = event['Records'][0]['dynamodb']['NewImage']['message']['S']
     print("GRUP ===>",group_uuid,message)
 
-    table_name = 'cruddur-messages'
+    table_name = 'CrdDdb-DynamoDBTable-1E5X26DR50AN8'
     index_name = 'message-group-sk-index'
     table = dynamodb.Table(table_name)
     data = table.query(
