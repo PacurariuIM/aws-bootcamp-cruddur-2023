@@ -20,7 +20,7 @@ if len(sys.argv) == 2:
     attrs = {}
 
 dynamodb = boto3.client('dynamodb',**attrs)
-table_name = 'cruddur-messages'
+table_name = 'CrdDdb-DynamoDBTable-1E5X26DR50AN8'
 
 def get_my_user_uuid():
     sql = """
