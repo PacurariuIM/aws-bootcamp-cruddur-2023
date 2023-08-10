@@ -11,19 +11,18 @@ import {ReactComponent as BombIcon} from './svg/bomb.svg';
 
 export default function ActivityShowItem(props) {
 
-  
+  const attrs = {}
+  attrs.className = 'activity_item expanded'
   return (
-    <div className="activity_item expanded">
-      <div className="activity_main">
+    <div {...attrs}>
+      <div className="acitivty_main">
         <div className='activity_content_wrap'>
           <div className='activity_content'>
-          {props.activity.handle && (
-            <Link className='activity_avatar'to={`/@${props.activity.handle}`} ></Link>
-          )}
+            <Link className='activity_avatar'to={`/@`+props.activity.handle} ></Link>
             <div className='activity_meta'>
               <div className='activity_identity' >
-                <Link className='display_name' to={`/@${props.activity.handle}`}>{props.activity.display_name}</Link>
-                <Link className="handle" to={`/@${props.activity.handle}`}>@{props.activity.handle}</Link>
+                <Link className='display_name' to={`/@`+props.activity.handle}>{props.activity.display_name}</Link>
+                <Link className="handle" to={`/@`+props.activity.handle}>@{props.activity.handle}</Link>
               </div>{/* activity_identity */}
               <div className='activity_times'>
                 <div className="created_at" title={format_datetime(props.activity.created_at)}>
@@ -40,7 +39,7 @@ export default function ActivityShowItem(props) {
         </div>
 
         <div className='expandedMeta'>
-          <div className="created_at">
+          <div class="created_at">
             {format_datetime(props.activity.created_at)}
           </div>
         </div>
@@ -52,5 +51,5 @@ export default function ActivityShowItem(props) {
         </div>
       </div>
     </div>
-  );
+  )
 }
